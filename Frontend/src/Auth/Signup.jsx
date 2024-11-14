@@ -2,20 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaX } from 'react-icons/fa6'
 
-
 const Signup = () => {
   const navigator = useNavigate();
-
   const [allUsers, setAllUsers] = useState([]);
-  
-    // allUsers.map((user) =>{
-    //   console.log('fetched: ' + user.email)
-    // })
 
-    useEffect( () => {
-        fetch("http://localhost:5000/all-userinfo").then( res => res.json()).then(data => setAllUsers(data));
-
-    }, [])
+  useEffect(() => {
+    fetch("http://localhost:5000/all-userinfo")
+      .then(res => res.json())
+      .then(data => setAllUsers(data));
+  }, [])
 
   const handelRegister = async (event) => {
     event.preventDefault();
@@ -38,13 +33,20 @@ const Signup = () => {
             form.reset();
             navigator('/login');
         } else {
-            alert(data.message || "Registration failed. Try again.");
+            // Handle specific error cases
+            if (data.message === "Email already registered") {
+              alert("This email is already registered!");
+              form.reset();
+            } else {
+              alert(data.message || "Registration failed. Try again.");
+              form.reset();
+            }
         }
     } catch (error) {
         console.error("Error during registration:", error);
         alert("An error occurred during registration.");
     }
-};
+  };
 
   return (
     <div className='my-20 '>

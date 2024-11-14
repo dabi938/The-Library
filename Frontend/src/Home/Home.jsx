@@ -5,7 +5,6 @@ import Banner from './Banner'
 import HomeAbout from './HomeAbout'
 import HomeService from './HomeService'
 import Footer from '../Component/Footer'
-
 const Home = () => {
   return (
     <div>

@@ -3,11 +3,33 @@ const app = express()
 const port = process.env.PORT || 5000;
 const cors = require('cors')
 const bcrypt = require('bcrypt')
+const multer = require('multer');
+const path = require('path');
 
+// Configure multer for PDF storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/ebooks/') 
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+});
 
+const upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF files are allowed!'), false);
+        }
+    }
+});
 //middleware {which helps us to connect with the frontend side of our app}
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // app.get('/', (req, res) =>{
 //     res.send('Hello World')
@@ -19,7 +41,7 @@ app.use(express.json());
 // const upload = multer({ dest: 'uploads/' }); // Set the directory to store uploaded files
 
 
-//MongoDB Cofiguration (past the code from the mongodb website as a tempo)
+//MongoDB Cofiguration (pest the code from the mongodb website as a tempo)
 
 const {MongoClient , ServerApiVersion, ObjectId} = require('mongodb');
 const uri = "mongodb://localhost:27017/Mint-Library"
@@ -115,6 +137,7 @@ async function run(){
             res.send(result);
         })
 
+
          ////////////////////////////////////////////////
         //     FOR E-BOOKS                            //
        ////////////////////////////////////////////////
@@ -122,13 +145,20 @@ async function run(){
         
         // MongoDB Collection
         const theEbooks = client.db("TheLibrary").collection("Ebooks");
-        
-        // Route to upload a new eBook
-        app.post("/upload-ebook", async(req, res) => {
-            const data = req.body;
-            const result = await theEbooks.insertOne(data);
-            res.send(result);
-        })
+
+        // Update the upload-ebook endpoint
+        app.post("/upload-ebook", upload.single('pdfFile'), async(req, res) => {
+            try {
+                const data = {
+                    ...req.body,
+                    pdfPath: req.file ? `/uploads/ebooks/${req.file.filename}` : null
+                };
+                const result = await theEbooks.insertOne(data);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: "Failed to upload ebook" });
+            }
+        });
         
         // Route to get all eBooks
         app.get("/all-ebooks", async (req, res) => {
@@ -288,13 +318,23 @@ async function run(){
         }
         setupAdmin().catch(console.error);
 
-        // User Registration Endpoint
+        //User Registration Endpoint
         app.post("/create-userinfo", async (req, res) => {
             try {
                 const { name, email, password } = req.body;
+                
+                // Check if email already exists
+                const existingUser = await Users.findOne({ email });
+                if (existingUser) {
+                    return res.status(400).send({ 
+                        success: false, 
+                        message: "Email already registered" 
+                    });
+                }
+        
                 const hashedPassword = await bcrypt.hash(password, 10);
                 const newUser = { name, email, password: hashedPassword, role: 'user' };
-
+        
                 await Users.insertOne(newUser);
                 res.status(201).send({ success: true, message: "User registered successfully." });
             } catch (error) {

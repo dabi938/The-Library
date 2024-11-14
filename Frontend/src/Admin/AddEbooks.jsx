@@ -4,41 +4,60 @@ import { Link, useNavigate } from 'react-router-dom'
 
 const AddBooks = () => {
 
-  const handelAddbook =(event) => {
-    event.preventDefault();
-    const form = event.target;
-     
-    //To Check if it works or not
-    // const imageURL = form.imageURL.value;
-    // console.log(imageURL)
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    const imageURL = form.imageURL.value;
-    const bookTitle = form.bookTitle.value;
-    const authorName = form.authorName.value;
-    const publisher = form.publisher.value;
-    const edition = form.edition.value;
-    const category = form.category.value;
-    const thepdfURL = form.thepdfURL.value;
+  const handelAddbook = async (event) => {
+      event.preventDefault();
+      setLoading(true);
+      
+      try {
+          const form = event.target;
+          const formData = new FormData();
+          
+          // Add all form fields to FormData
+          formData.append('imageURL', form.imageURL.value);
+          formData.append('bookTitle', form.bookTitle.value);
+          formData.append('authorName', form.authorName.value);
+          formData.append('publisher', form.publisher.value);
+          formData.append('edition', form.edition.value);
+          formData.append('category', form.category.value);
+          
+          // Append the PDF file if selected
+          if (selectedFile) {
+              formData.append('pdfFile', selectedFile);
+          }
 
-    const bookObj = {
-      imageURL, bookTitle, authorName, publisher, edition, category, thepdfURL
-    }
+          const response = await fetch("http://localhost:5000/upload-ebook", {
+              method: "POST",
+              body: formData, // Don't set Content-Type header, let browser handle it
+          });
 
-    // console.log(bookObj);
-    // sending data into Database
+          const data = await response.json();
+          
+          if (data) {
+              alert("The e-Book has been uploaded successfully!");
+              form.reset();
+              setSelectedFile(null);
+          }
+      } catch (error) {
+          console.error("Error uploading ebook:", error);
+          alert("Failed to upload e-book");
+      } finally {
+          setLoading(false);
+      }
+  };
 
-    fetch("http://localhost:5000/upload-ebook", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(bookObj)
-    }).then(res => res.json(),).then(data => {
-      alert("The e-Book has been Upload successfully!!")
-      form.reset();
-    })
+  const handleFileChange = (event) => {
+      const file = event.target.files[0];
+      if (file && file.type === 'application/pdf') {
+          setSelectedFile(file);
+      } else {
+          alert('Please select a PDF file');
+          event.target.value = '';
+      }
+  };
 
-  }
 
   const navigator = useNavigate()
 
@@ -184,13 +203,21 @@ const [isOpen, setIsOpen] = useState(false);
                             <label htmlFor="category" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
                             <input type="text" id="category" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Inter Book Catagory" required />
                         </div>
-                        <div>
-                            <label htmlFor="thepdfURL" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">e-Book URL</label>
-                            <input type="text" id="thepdfURL" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Inter e-Book URL"  />
-                        </div>
-                    </div>
+                          <div>
+                            <label htmlFor="pdfFile" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Upload PDF File
+                            </label>
+                            <input
+                                type="file"
+                                id="pdfFile"
+                                accept=".pdf"
+                                onChange={handleFileChange}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            />
+                          </div>
+                       </div>
                     <div className='flex justify-center w-full'>
-                        <button type="submit" className="w-72  text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Add an e-Book</button>
+                    <button type="submit" disabled={loading} className="w-72 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">{loading ? 'Uploading...' : 'Add an e-Book'}</button>
                     </div>            
                 </form>      
             </div> 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import theLogo from '../assets/Library-logo.png'
+import { FaX } from 'react-icons/fa6'
 
 
 const ManageBooks = () => {
@@ -8,6 +9,8 @@ const ManageBooks = () => {
     const navigator = useNavigate()
 
     const [allBooks, setAllBooks] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+     const [filteredBooks, setFilteredBooks] = useState([]);
 
     useEffect( () => {
         fetch("http://localhost:5000/all-ebooks").then( res => res.json()).then(data => setAllBooks(data));
@@ -34,6 +37,22 @@ const ManageBooks = () => {
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const filtered = allBooks.filter(book => 
+        book.bookTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredBooks(filtered);
+};
+
+const handleClearSearch = () => {
+    setSearchQuery('');
+    setFilteredBooks([]);
+};
+ 
 
   return (
     <div>
@@ -139,6 +158,28 @@ const ManageBooks = () => {
                     <h1 className="text-gray-900 dark:text-white text-3xl md:text-4xl font-extrabold mb-2">Manage an e-Books</h1>
                     <div className='bg-blue-700 rounded-lg py-1 w-16 mb-14 '></div>
                 </div>
+
+                <form onSubmit={handleSearch} className="max-w-md mx-auto mb-7">
+                  <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                  <div className="relative">
+                    <div className='flex'>
+                    <FaX onClick={handleClearSearch} className=' absolute start-2 bottom-5'/>
+                        <input
+                        type="search"
+                        id="default-search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="Search by title, author, or category..."
+                        required
+                        />
+                        <button type="submit" className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                            Search
+                        </button>
+                    </div>            
+                  </div>
+                </form>
+
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right ">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -159,7 +200,7 @@ const ManageBooks = () => {
                                 Edition
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                Call Number
+                                Catagory
                                 </th>
                                 <th scope="col" className="px-6 py-3">
                                 Manage Books
@@ -167,7 +208,7 @@ const ManageBooks = () => {
                             </tr>
                         </thead>
                         {
-                            allBooks.map((books) => 
+                            (filteredBooks.length > 0 ? filteredBooks : allBooks).map((books) => 
                             <tbody key={books._id} className='divide-y'>
                                 <tr className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
                                     <td scope="row" className='px-6 py-4'>
@@ -187,11 +228,17 @@ const ManageBooks = () => {
                                     </td>
                                     <td className='px-6 py-4'>
                                         {books.category}
-                                    </td>
-                                    <td className='flex justify-center items-center gap-2 px-6 py-4 text-center' > 
-                                        <Link className='font-medium text-green-700 hover:underline dark:text-green-800 cursor-pointer' to={`/admin/dashboard/editEbook/${books._id}`}><p>Edit</p></Link>                
-                                        <button className='font-medium text-red-700 hover:underline dark:text-red-800' onClick={() => handleDelet(books._id)}><p>Delete</p></button>
-                                    </td>               
+                                    </td>                          
+                                    <td className='px-6 py-4'>
+                                        <div className='flex items-center justify-center gap-4'>
+                                            <Link className='font-medium text-green-700 hover:underline dark:text-green-800 cursor-pointer' to={`/admin/dashboard/editEbook/${books._id}`}>
+                                                Edit
+                                            </Link>                
+                                            <button className='font-medium text-red-700 hover:underline dark:text-red-800' onClick={() => handleDelet(books._id)}>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>             
                                 </tr>          
                             </tbody>
                            )
